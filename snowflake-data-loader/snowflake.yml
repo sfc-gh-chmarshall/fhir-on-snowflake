@@ -1,0 +1,36 @@
+definition_version: 2
+mixins:
+  default_env:
+    stage: dev_deployment
+    
+entities:
+  load_fhir_resource:
+    type: procedure
+    identifier:
+      name: LOAD_FHIR_RESOURCE
+    handler: app.main
+    signature:
+      - name: resource_type
+        type: string
+      - name: target_table
+        type: string
+      - name: resource_limit
+        type: int
+    returns: string
+    artifacts:
+      - src: load_fhir_resource/
+        dest: ./
+    external_access_integrations:
+      - HAPI_FHIR_ACCESS_INTEGRATION
+    execute_as_caller: true
+    meta:
+      use_mixins:
+        - default_env
+
+defaults:
+  database: &database HL7
+  schema: &schema RAW
+  
+env:
+  database: *database
+  schema: *schema

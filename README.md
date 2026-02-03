@@ -1,3 +1,52 @@
+# HAPI FHIR on Snowflake
+
+This project provides a complete FHIR solution on Snowflake, combining:
+
+1. **HAPI FHIR JPA Server** - A production-ready FHIR R4 server running in Snowpark Container Services (SPCS)
+2. **Snowflake Data Loader** - Python tools to extract FHIR resources from the server and load them into Snowflake tables for analytics
+
+## Project Structure
+
+```
+hapi-fhir-jpaserver-starter/
+├── src/                          # HAPI FHIR Java server source
+├── Dockerfile                    # Container image for SPCS deployment
+├── spcs-service-spec.yaml        # SPCS service specification
+├── docker-compose.yml            # Local development with PostgreSQL
+│
+└── snowflake-data-loader/        # Python ETL for FHIR → Snowflake
+    ├── load_fhir_resource/       # Stored procedure for incremental sync
+    ├── load_test_data/           # Test data loader utility
+    ├── claim_update/             # Stream-based flattening
+    ├── Setup.sql                 # Snowflake object setup
+    └── snowflake.yml             # Snowflake CLI deployment config
+```
+
+## Quick Start
+
+### 1. Deploy HAPI FHIR Server to SPCS
+```bash
+# Build and push Docker image
+./build-docker-image.sh
+docker tag hapi-fhir/hapi-fhir-jpaserver-starter:latest <registry>/hapi-fhir:latest
+docker push <registry>/hapi-fhir:latest
+
+# Create SPCS service (see spcs-service-spec.yaml)
+```
+
+### 2. Load FHIR Data into Snowflake
+```bash
+cd snowflake-data-loader
+snow snowpark deploy
+
+# Then in Snowflake:
+CALL LOAD_FHIR_RESOURCE('Patient', 'RAW_FHIR_PATIENTS', 1000);
+```
+
+See [snowflake-data-loader/README.md](./snowflake-data-loader/README.md) for detailed documentation.
+
+---
+
 # HAPI-FHIR Starter Project
 
 This project is a complete starter project you can use to deploy a FHIR server using HAPI FHIR JPA.

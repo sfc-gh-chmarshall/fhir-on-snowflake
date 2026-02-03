@@ -1,0 +1,9 @@
+default_connection_name = "dev"
+
+[connections.dev]
+account = "myaccount"
+user = "myusername"
+password = "mypassword"
+role = "HOL_ROLE"
+warehouse = "HOL_WH"
+database = "HOL_DB"

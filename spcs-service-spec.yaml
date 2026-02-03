@@ -1,0 +1,29 @@
+spec:
+  containers:
+  - name: hapi-fhir
+    image: /fullstack_db/devops/images/hapi-fhir:latest
+    env:
+      SPRING_DATASOURCE_URL: "jdbc:h2:mem:hapi"
+      SPRING_DATASOURCE_USERNAME: "sa"
+      SPRING_DATASOURCE_PASSWORD: ""
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: "org.h2.Driver"
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: "ca.uhn.fhir.jpa.model.dialect.HapiFhirH2Dialect"
+      HAPI_FHIR_TESTER_HOME_SERVER_ADDRESS: "http://fhir-server.p743.svc.spcs.internal:8080/fhir"
+      HAPI_FHIR_TESTER_HOME_NAME: "SPCS FHIR Server"
+    resources:
+      requests:
+        memory: 4Gi
+        cpu: 2000m
+      limits:
+        memory: 8Gi
+        cpu: 4000m
+    readinessProbe:
+      port: 8080
+      path: /actuator/health
+      initialDelaySeconds: 90
+      periodSeconds: 10
+      timeoutSeconds: 5
+  endpoints:
+  - name: fhir-api
+    port: 8080
+    public: true

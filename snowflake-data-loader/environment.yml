@@ -1,0 +1,13 @@
+name: hapi-fhir-demo
+channels:
+  - https://repo.anaconda.com/pkgs/snowflake
+  - nodefaults
+dependencies:
+  - python=3.11
+  - snowflake-snowpark-python
+  - requests
+  - pandas<3.0
+  - pip
+  - pip:
+    - snowflake-cli
+    - toml
