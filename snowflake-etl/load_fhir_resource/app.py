@@ -1,24 +1,17 @@
+import os
 import requests
 import json
 import logging
 import uuid
 from datetime import datetime, timezone
-from pathlib import Path
 from snowflake.snowpark import Session
-from snowflake.snowpark.exceptions import SnowparkSQLException
 from requests.exceptions import HTTPError
-
-try:
-    import toml
-except ImportError:
-    toml = None
 
 reqsession = requests.Session()
 logger = logging.getLogger("python_logger")
 logger.info("Logging from python module")
 
-DEFAULT_FHIR_BASE_URL = "http://fhir-server.p743.svc.spcs.internal:8080/fhir"
-EXTERNAL_FHIR_BASE_URL = "https://azbookd-sfsenorthamerica-demo8498.snowflakecomputing.app/fhir"
+DEFAULT_FHIR_BASE_URL = os.environ.get("FHIR_BASE_URL", "http://fhir-server:8080/fhir")
 DATABASE = "HL7"
 SCHEMA = "RAW"
 WATERMARK_TABLE = f"{DATABASE}.{SCHEMA}.FHIR_SYNC_WATERMARKS"
@@ -352,40 +345,3 @@ def main(session: Session, resource_type: str = "Claim", target_table: str = "RA
     result = load_fhir_resource(session, resource_type, target_table, event_table, fhir_base_url)
     logger.info(result['message'])
     return json.dumps(result)
-
-
-def configure_auth_for_external_url(fhir_url: str, connection_name: str) -> None:
-    if fhir_url.startswith("https://") and "snowflakecomputing.app" in fhir_url:
-        if toml is None:
-            raise ImportError("toml package required for external URL auth. Install with: pip install toml")
-        connections_path = Path.home() / ".snowflake" / "connections.toml"
-        if not connections_path.exists():
-            raise FileNotFoundError(f"Snowflake connections file not found: {connections_path}")
-        with open(connections_path) as f:
-            connections = toml.load(f)
-        if connection_name not in connections:
-            raise ValueError(f"Connection '{connection_name}' not found")
-        pat = connections[connection_name].get("password")
-        if not pat:
-            raise ValueError(f"Connection '{connection_name}' has no password/PAT configured")
-        reqsession.headers.update({"Authorization": f'Snowflake Token="{pat}"'})
-        logger.info(f"Configured PAT auth for external FHIR URL")
-
-
-if __name__ == '__main__':
-    import argparse
-    
-    parser = argparse.ArgumentParser(description="Load FHIR resources from HAPI FHIR server into Snowflake")
-    parser.add_argument("resource_type", help="FHIR resource type (Patient, Claim, Observation, etc.)")
-    parser.add_argument("target_table", help="Target Snowflake table name")
-    parser.add_argument("--event-table", default=EVENT_TABLE, help=f"Event table for log correlation (default: {EVENT_TABLE})")
-    parser.add_argument("--fhir-url", default=EXTERNAL_FHIR_BASE_URL, help=f"FHIR server base URL (default: {EXTERNAL_FHIR_BASE_URL})")
-    parser.add_argument("--connection", default="default", help="Snowflake CLI connection name from connections.toml (default: default)")
-    args = parser.parse_args()
-    
-    configure_auth_for_external_url(args.fhir_url, args.connection)
-    
-    session = Session.builder.config("connection_name", args.connection).create()
-    
-    print(main(session, args.resource_type, args.target_table, args.event_table, args.fhir_url))
-    session.close()

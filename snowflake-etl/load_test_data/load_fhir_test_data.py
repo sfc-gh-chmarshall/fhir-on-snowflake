@@ -26,7 +26,6 @@ import requests
 import toml
 
 FHIR_TEST_DATA_URL = "https://www.fhir.org/packages/fhir.test.data.r4/0.2.1/package.tgz"
-DEFAULT_SERVER_URL = "https://azbookd-sfsenorthamerica-demo8498.snowflakecomputing.app/fhir"
 
 RESOURCE_LOAD_ORDER = [
     "Organization",
@@ -234,7 +233,7 @@ def check_server_available(server_url: str, session: requests.Session) -> bool:
 
 def main():
     parser = argparse.ArgumentParser(description="Load FHIR test data into SPCS HAPI FHIR server")
-    parser.add_argument("--server-url", default=DEFAULT_SERVER_URL, help=f"FHIR server URL (default: {DEFAULT_SERVER_URL})")
+    parser.add_argument("--server-url", required=True, help="FHIR server URL (e.g., https://<endpoint>.snowflakecomputing.app/fhir)")
     parser.add_argument("--data-dir", help="Directory to store downloaded data (default: temp directory)")
     parser.add_argument("--skip-download", action="store_true", help="Skip download if data already exists in data-dir")
     parser.add_argument("--connection", default="default", help="Snowflake CLI connection name from connections.toml")

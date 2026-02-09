@@ -167,3 +167,12 @@ Temporary Items
 
 # Helm Chart dependencies
 **/charts/*.tgz
+
+# Snowpark build artifacts
+output/
+**/output/
+__pycache__/
+**/__pycache__/
+*.pyc
+.venv/
+venv/

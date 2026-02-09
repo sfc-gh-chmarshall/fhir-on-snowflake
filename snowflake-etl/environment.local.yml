@@ -1,4 +1,4 @@
-name: hapi-fhir-demo
+name: fhir-on-snowflake
 channels:
   - https://repo.anaconda.com/pkgs/snowflake
   - nodefaults

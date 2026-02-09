@@ -1,36 +1,30 @@
 definition_version: 2
-mixins:
-  default_env:
-    stage: dev_deployment
-    
+
 entities:
   load_fhir_resource:
     type: procedure
     identifier:
       name: LOAD_FHIR_RESOURCE
+      database: HL7
+      schema: RAW
+    stage: HL7.RAW.deployments
     handler: app.main
+    runtime: "3.11"
     signature:
       - name: resource_type
         type: string
+        default: "Claim"
       - name: target_table
         type: string
-      - name: resource_limit
-        type: int
+        default: "RAW_FHIR_RESOURCES"
+      - name: event_table
+        type: string
+        default: "SNOWFLAKE.TELEMETRY.EVENTS"
+      - name: fhir_base_url
+        type: string
+        default: "http://fhir-server:8080/fhir"
     returns: string
     artifacts:
       - src: load_fhir_resource/
         dest: ./
-    external_access_integrations:
-      - HAPI_FHIR_ACCESS_INTEGRATION
     execute_as_caller: true
-    meta:
-      use_mixins:
-        - default_env
-
-defaults:
-  database: &database HL7
-  schema: &schema RAW
-  
-env:
-  database: *database
-  schema: *schema

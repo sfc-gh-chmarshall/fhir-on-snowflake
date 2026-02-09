@@ -1,4 +1,0 @@
-snowflake-snowpark-python
-toml # for local development
-pandas
-requests

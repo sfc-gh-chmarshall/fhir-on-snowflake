@@ -1,5 +1,58 @@
 # Future Enhancements
 
+## In Progress
+
+### Snowflake Postgres Backend Migration
+
+**Priority:** High (next task)
+
+Migrate HAPI FHIR JPA Server from in-memory H2 to Snowflake Managed Postgres for persistent storage.
+
+**Phase 1: Instance Setup** ✅
+- [x] Create Snowflake Postgres instance in Snowsight (`fhir-postgres`)
+- [x] Select Postgres 17/18, configure instance size and storage
+- [x] Save connection credentials securely
+- [x] Configure network policy for SPCS access
+- [x] Create `fhir` database and `fhir_app` user
+
+**Phase 2: Application Configuration** ✅
+- [x] Update `application.yaml` datasource to PostgreSQL JDBC URL
+- [x] Switch Hibernate dialect to `HapiFhirPostgresDialect`
+- [x] Verify PostgreSQL driver in `pom.xml`
+- [x] Create `application-snowflake-postgres.yaml` profile for easy switching
+
+**Phase 3: Docker/SPCS Updates**
+- [ ] Update `docker-compose.yml` for local Postgres testing
+- [ ] Update SPCS service spec with secrets and networking
+
+**Phase 4: Testing**
+- [ ] Local testing with `mvn spring-boot:run -Pboot`
+- [ ] Verify schema auto-creation
+- [ ] Test CRUD operations via HAPI FHIR UI
+- [ ] Load sample FHIR bundles
+- [ ] Run `mvn verify`
+
+**Key Configuration Changes:**
+```yaml
+spring:
+  datasource:
+    url: jdbc:postgresql://<host>:5432/fhir?sslmode=require
+    username: fhir_app
+    password: ${FHIR_DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    properties:
+      hibernate:
+        dialect: ca.uhn.fhir.jpa.model.dialect.HapiFhirPostgresDialect
+```
+
+**References:**
+- [Snowflake Postgres Docs](https://docs.snowflake.com/en/user-guide/snowflake-postgres/about)
+- [Creating Instance](https://docs.snowflake.com/en/user-guide/snowflake-postgres/postgres-create-instance)
+- [Connecting](https://docs.snowflake.com/en/user-guide/snowflake-postgres/connecting-to-snowflakepg)
+
+---
+
 ## Parking Lot
 
 ### SMART on FHIR Authentication
