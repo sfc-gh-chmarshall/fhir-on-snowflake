@@ -1,65 +1,10 @@
 # Future Enhancements
 
-## In Progress
+## SMART on FHIR Authentication
 
-### Snowflake Postgres Backend Migration
+**Priority:** High (for EHR integration)
 
-**Priority:** High (next task)
-
-Migrate HAPI FHIR JPA Server from in-memory H2 to Snowflake Managed Postgres for persistent storage.
-
-**Phase 1: Instance Setup** ✅
-- [x] Create Snowflake Postgres instance in Snowsight (`fhir-postgres`)
-- [x] Select Postgres 17/18, configure instance size and storage
-- [x] Save connection credentials securely
-- [x] Configure network policy for SPCS access
-- [x] Create `fhir` database and `fhir_app` user
-
-**Phase 2: Application Configuration** ✅
-- [x] Update `application.yaml` datasource to PostgreSQL JDBC URL
-- [x] Switch Hibernate dialect to `HapiFhirPostgresDialect`
-- [x] Verify PostgreSQL driver in `pom.xml`
-- [x] Create `application-snowflake-postgres.yaml` profile for easy switching
-
-**Phase 3: Docker/SPCS Updates**
-- [ ] Update `docker-compose.yml` for local Postgres testing
-- [ ] Update SPCS service spec with secrets and networking
-
-**Phase 4: Testing**
-- [ ] Local testing with `mvn spring-boot:run -Pboot`
-- [ ] Verify schema auto-creation
-- [ ] Test CRUD operations via HAPI FHIR UI
-- [ ] Load sample FHIR bundles
-- [ ] Run `mvn verify`
-
-**Key Configuration Changes:**
-```yaml
-spring:
-  datasource:
-    url: jdbc:postgresql://<host>:5432/fhir?sslmode=require
-    username: fhir_app
-    password: ${FHIR_DB_PASSWORD}
-    driver-class-name: org.postgresql.Driver
-  jpa:
-    properties:
-      hibernate:
-        dialect: ca.uhn.fhir.jpa.model.dialect.HapiFhirPostgresDialect
-```
-
-**References:**
-- [Snowflake Postgres Docs](https://docs.snowflake.com/en/user-guide/snowflake-postgres/about)
-- [Creating Instance](https://docs.snowflake.com/en/user-guide/snowflake-postgres/postgres-create-instance)
-- [Connecting](https://docs.snowflake.com/en/user-guide/snowflake-postgres/connecting-to-snowflakepg)
-
----
-
-## Parking Lot
-
-### SMART on FHIR Authentication
-
-**Priority:** High (for Epic EHR integration)
-
-Epic is expanding SMART on FHIR capabilities. When extending this codebase to production Epic environments, we'll need:
+EHRs are expanding SMART on FHIR capabilities. When extending this codebase to production environments, we'll need:
 
 - OAuth2 authorization flows (authorization code, client credentials)
 - JWT-based authentication with signed tokens
@@ -110,13 +55,6 @@ Current Python approach is sufficient for read-and-land patterns. Revisit Java w
             → [Epic/HAPI FHIR Server]
 ```
 
-### Epic-Specific Considerations
-
-- Epic uses R4 FHIR version
-- Epic's sandbox vs production authentication differs
-- Rate limiting and bulk data access ($export) may be required for large datasets
-- Epic App Orchard registration for production access
-
 ### Bulk FHIR Export
 
 **Priority:** Medium
@@ -127,3 +65,79 @@ For large-scale data pulls, implement FHIR Bulk Data Access ($export):
 - Polling for completion
 - NDJSON file download and processing
 - Better for full loads vs incremental sync
+
+---
+
+## CDS Hooks Integration
+
+**Priority:** Medium (for clinical decision support use cases)
+
+[CDS Hooks](https://cds-hooks.org/) is an HL7 standard for delivering real-time Clinical Decision Support within EHR workflows. It "hooks" into specific moments in a clinician's workflow to provide context-aware recommendations.
+
+### How CDS Hooks Work
+
+1. **Hook Trigger**: Clinical events (e.g., opening a patient chart, ordering medication) trigger a hook
+2. **CDS Service**: External service receives context + patient data via FHIR
+3. **CDS Cards**: Service returns actionable recommendations displayed in the EHR
+4. **SMART App Launch**: Cards can optionally launch SMART on FHIR apps for deeper interaction
+
+### Standard Hook Types
+
+| Hook | Trigger |
+|------|---------|
+| `patient-view` | Opening a patient record |
+| `order-select` | Selecting orders to place |
+| `order-sign` | Immediately before signing an order |
+| `encounter-start` | Beginning a patient encounter |
+
+### Integration with FHIR-on-Snowflake
+
+This architecture enables powerful CDS scenarios by combining real-time FHIR data with Snowflake analytics:
+
+```
+[EHR] → [CDS Hook Request]
+            ↓
+    [HAPI FHIR Server (SPCS)]
+            ↓
+    [Snowflake Postgres] ← [Analytics/ML Models]
+            ↓
+    [CDS Cards Response] → [EHR Display]
+```
+
+**Potential Use Cases:**
+
+1. **Risk Scoring**: Query Snowflake ML models for patient risk scores when chart opens (`patient-view`)
+2. **Clinical Trial Matching**: Check patient eligibility against trial criteria stored in Snowflake
+3. **Drug Interaction Alerts**: Cross-reference orders against analytics on adverse events (`order-sign`)
+4. **Population Health Insights**: Surface relevant cohort analytics during patient encounters
+5. **Cost/Utilization Alerts**: Provide cost-effectiveness recommendations from claims analytics
+
+### Implementation Approach
+
+**Phase 1: CDS Service Endpoint**
+- Add CDS Hooks discovery endpoint to HAPI FHIR server (`/cds-services`)
+- Implement `patient-view` hook as initial proof of concept
+- Return basic CDS Cards with patient context
+
+**Phase 2: Snowflake Analytics Integration**
+- Create stored procedures that generate CDS recommendations from Snowflake data
+- Build ML models (e.g., readmission risk) deployable via Snowflake Model Registry
+- Wire CDS service to query Snowflake for real-time scoring
+
+**Phase 3: SMART App Links**
+- Develop SMART on FHIR apps for complex decision support workflows
+- Link CDS Cards to launch Streamlit apps hosted in SPCS
+- Enable deeper exploration of Snowflake analytics within clinical context
+
+### Key Considerations
+
+- **Latency**: CDS services must respond in near-real-time (<500ms ideal)
+- **Alert Fatigue**: Carefully curate recommendations to avoid overwhelming clinicians
+- **Security**: Implement CDS Hooks security model (JWT bearer tokens, CORS)
+- **SMART on FHIR**: Requires OAuth2 flows (see SMART on FHIR section above)
+
+### References
+
+- [CDS Hooks Specification](https://cds-hooks.hl7.org/)
+- [CDS Hooks Sandbox](http://sandbox.cds-hooks.org/)
+- [FHIR Clinical Reasoning](https://build.fhir.org/clinicalreasoning-cds-on-fhir.html)
